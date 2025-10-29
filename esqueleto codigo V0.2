@@ -1,0 +1,163 @@
+#include
+#include
+#include
+struct No {
+char nome[100];
+struct No *esq, *dir;
+};
+struct No* novo(char nome[100]) {
+struct No* n = malloc(sizeof(struct No));
+strcpy(n->nome, nome);
+n->esq = n->dir = NULL;
+return n;
+}
+struct No* insere(struct No* r, char nome[100]) {
+if (r == NULL) return novo(nome);
+if (strcmp(nome, r->nome) < 0) r->esq = insere(r->esq, nome);
+else r->dir = insere(r->dir, nome);
+return r;
+}
+void pre(struct No* r) {
+if (r) {
+printf("%s\n", r->nome);
+pre(r->esq);
+pre(r->dir);
+}
+}
+void em(struct No* r) {
+if (r) {
+em(r->esq);
+printf("%s\n", r->nome);
+em(r->dir);
+}
+}
+void pos(struct No* r) {
+if (r) {
+pos(r->esq);
+pos(r->dir);
+printf("%s\n", r->nome);
+}
+}
+int main() {
+struct No* raiz = NULL;
+char nomes[12][100] = {
+"Ana Silva","Carlos Souza","Bruno Oliveira","Fernanda Lima",
+"Diego Alves","Juliana Mendes","Paulo Santos","Mariana Costa",
+"Ricardo Gomes","Lucas Pereira","Patricia Ramos","Gustavo Rocha"
+};
+for (int i=0;i<12;i++) raiz = insere(raiz, nomes[i]);
+printf("\nPre Ordem:\n"); pre(raiz);
+printf("\nEm Ordem:\n"); em(raiz);
+printf("\nPos Ordem:\n"); pos(raiz);
+}
+#include
+#include
+#include
+struct No {
+char nome[100];
+struct No *esq, *dir;
+};
+struct No* novo(char nome[100]) {
+struct No* n = malloc(sizeof(struct No));
+strcpy(n->nome, nome);
+n->esq = n->dir = NULL;
+return n;
+}
+struct No* insere(struct No* r, char nome[100]) {
+if (r == NULL) return novo(nome);
+if (strcmp(nome, r->nome) < 0) r->esq = insere(r->esq, nome);
+else r->dir = insere(r->dir, nome);
+return r;
+}
+void em(struct No* r) {
+if (r) {
+em(r->esq);
+printf("%s\n", r->nome);
+em(r->dir);
+}
+}
+int main() {
+struct No* raiz = NULL;
+char nome[100];
+while (1) {
+fgets(nome,100,stdin);
+nome[strcspn(nome,"\n")] = 0;
+if (strlen(nome)==0) break;
+raiz = insere(raiz,nome);
+}
+printf("\nEm ordem:\n");
+em(raiz);
+}
+#include
+#include
+#include
+struct No {
+char nome[100];
+struct No *esq, *dir;
+};
+struct No* novo(char nome[100]) {
+struct No* n = malloc(sizeof(struct No));
+strcpy(n->nome, nome);
+n->esq = n->dir = NULL;
+return n;
+}
+struct No* insere(struct No* r, char nome[100]) {
+if (r == NULL) return novo(nome);
+if (strcmp(nome, r->nome) < 0) r->esq = insere(r->esq, nome);
+else r->dir = insere(r->dir, nome);
+return r;
+}
+struct No* menor(struct No* r) {
+while (r->esq) r = r->esq;
+return r;
+}
+struct No* excluir(struct No* r, char nome[100]) {
+if (r==NULL) return NULL;
+if (strcmp(nome,r->nome)<0) r->esq=excluir(r->esq,nome);
+else if (strcmp(nome,r->nome)>0) r->dir=excluir(r->dir,nome);
+else {
+if (!r->esq) { struct No* t=r->dir; free(r); return t; }
+else if (!r->dir) { struct No* t=r->esq; free(r); return t; }
+struct No* t=menor(r->dir);
+strcpy(r->nome,t->nome);
+r->dir=excluir(r->dir,t->nome);
+}
+return r;
+}
+struct No* busca(struct No* r, char nome[100]) {
+if (!r) return NULL;
+if (strcmp(nome,r->nome)==0) return r;
+if (strcmp(nome,r->nome)<0) return busca(r->esq,nome);
+return busca(r->dir,nome);
+}
+void em(struct No* r) {
+if (r) {
+em(r->esq);
+printf("%s\n", r->nome);
+em(r->dir);
+}
+}
+int main() {
+struct No* raiz=NULL;
+char nome[100], procurar[100], op;
+while (1) {
+fgets(nome,100,stdin);
+nome[strcspn(nome,"\n")]=0;
+if (strlen(nome)==0) break;
+raiz=insere(raiz,nome);
+}
+printf("Digite nome pra procurar: ");
+fgets(procurar,100,stdin);
+procurar[strcspn(procurar,"\n")]=0;
+struct No* achado=busca(raiz,procurar);
+if (achado) {
+printf("Achei: %s\n", achado->nome);
+printf("Excluir? (s/n): ");
+scanf(" %c",&op;);
+if (op=='s') raiz=excluir(raiz,procurar);
+} else {
+printf("Nao achei\n");
+}
+printf("\nEm ordem:\n");
+em(raiz);
+}

@@ -1,0 +1,264 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Produto do catálogo
+typedef struct Produto {
+    int codigo;
+    char nome[100];
+    float preco;
+} Produto;
+
+// Nó da árvore
+typedef struct No {
+    Produto item;
+    int altura;
+    struct No *esq, *dir;
+} No;
+
+// ------------------ Funções AVL ------------------
+int max(int a, int b) { return (a > b) ? a : b; }
+int altura(No* n) { return (n == NULL) ? 0 : n->altura; }
+int fatorBalanceamento(No* n) { return (n == NULL) ? 0 : altura(n->esq) - altura(n->dir); }
+
+// Rotações AVL
+No* rotacaoDireita(No* y) {
+    No* x = y->esq;
+    No* T2 = x->dir;
+    x->dir = y;
+    y->esq = T2;
+    y->altura = 1 + max(altura(y->esq), altura(y->dir));
+    x->altura = 1 + max(altura(x->esq), altura(x->dir));
+    return x;
+}
+No* rotacaoEsquerda(No* x) {
+    No* y = x->dir;
+    No* T2 = y->esq;
+    y->esq = x;
+    x->dir = T2;
+    x->altura = 1 + max(altura(x->esq), altura(x->dir));
+    y->altura = 1 + max(altura(y->esq), altura(y->dir));
+    return y;
+}
+
+// Criar nó
+No* novoNo(Produto p) {
+    No* no = (No*) malloc(sizeof(No));
+    no->item = p;
+    no->altura = 1;
+    no->esq = no->dir = NULL;
+    return no;
+}
+
+// Inserção AVL com comparação por preço
+No* inserirPorPreco(No* raiz, Produto p) {
+    if (raiz == NULL) return novoNo(p);
+
+    if (p.preco < raiz->item.preco)
+        raiz->esq = inserirPorPreco(raiz->esq, p);
+    else if (p.preco > raiz->item.preco)
+        raiz->dir = inserirPorPreco(raiz->dir, p);
+    else {
+        if (p.codigo < raiz->item.codigo)
+            raiz->esq = inserirPorPreco(raiz->esq, p);
+        else
+            raiz->dir = inserirPorPreco(raiz->dir, p);
+    }
+
+    raiz->altura = 1 + max(altura(raiz->esq), altura(raiz->dir));
+    int fb = fatorBalanceamento(raiz);
+
+    if (fb > 1 && p.preco < raiz->esq->item.preco) return rotacaoDireita(raiz);
+    if (fb < -1 && p.preco > raiz->dir->item.preco) return rotacaoEsquerda(raiz);
+    if (fb > 1 && p.preco > raiz->esq->item.preco) {
+        raiz->esq = rotacaoEsquerda(raiz->esq);
+        return rotacaoDireita(raiz);
+    }
+    if (fb < -1 && p.preco < raiz->dir->item.preco) {
+        raiz->dir = rotacaoDireita(raiz->dir);
+        return rotacaoEsquerda(raiz);
+    }
+    return raiz;
+}
+
+// Inserção AVL com comparação por código
+No* inserirPorCodigo(No* raiz, Produto p) {
+    if (raiz == NULL) return novoNo(p);
+
+    if (p.codigo < raiz->item.codigo)
+        raiz->esq = inserirPorCodigo(raiz->esq, p);
+    else if (p.codigo > raiz->item.codigo)
+        raiz->dir = inserirPorCodigo(raiz->dir, p);
+    else
+        return raiz; // códigos iguais não inserem
+
+    raiz->altura = 1 + max(altura(raiz->esq), altura(raiz->dir));
+    int fb = fatorBalanceamento(raiz);
+
+    if (fb > 1 && p.codigo < raiz->esq->item.codigo) return rotacaoDireita(raiz);
+    if (fb < -1 && p.codigo > raiz->dir->item.codigo) return rotacaoEsquerda(raiz);
+    if (fb > 1 && p.codigo > raiz->esq->item.codigo) {
+        raiz->esq = rotacaoEsquerda(raiz->esq);
+        return rotacaoDireita(raiz);
+    }
+    if (fb < -1 && p.codigo < raiz->dir->item.codigo) {
+        raiz->dir = rotacaoDireita(raiz->dir);
+        return rotacaoEsquerda(raiz);
+    }
+    return raiz;
+}
+
+// ------------------ Buscar ------------------
+No* buscarPorCodigo(No* raiz, int codigo) {
+    if (raiz == NULL) return NULL;
+    if (codigo == raiz->item.codigo) return raiz;
+    if (codigo < raiz->item.codigo) return buscarPorCodigo(raiz->esq, codigo);
+    else return buscarPorCodigo(raiz->dir, codigo);
+}
+
+// ------------------ Remover ------------------
+No* minimoValorNo(No* node) {
+    No* atual = node;
+    while (atual && atual->esq != NULL)
+        atual = atual->esq;
+    return atual;
+}
+
+No* removerPorCodigo(No* raiz, int codigo) {
+    if (!raiz) return NULL;
+
+    if (codigo < raiz->item.codigo)
+        raiz->esq = removerPorCodigo(raiz->esq, codigo);
+    else if (codigo > raiz->item.codigo)
+        raiz->dir = removerPorCodigo(raiz->dir, codigo);
+    else {
+        if (!raiz->esq || !raiz->dir) {
+            No* temp = raiz->esq ? raiz->esq : raiz->dir;
+            if (!temp) { temp = raiz; raiz = NULL; }
+            else *raiz = *temp;
+            free(temp);
+        } else {
+            No* temp = minimoValorNo(raiz->dir);
+            raiz->item = temp->item;
+            raiz->dir = removerPorCodigo(raiz->dir, temp->item.codigo);
+        }
+    }
+
+    if (!raiz) return NULL;
+
+    raiz->altura = 1 + max(altura(raiz->esq), altura(raiz->dir));
+    int fb = fatorBalanceamento(raiz);
+
+    if (fb > 1 && fatorBalanceamento(raiz->esq) >= 0) return rotacaoDireita(raiz);
+    if (fb > 1 && fatorBalanceamento(raiz->esq) < 0) {
+        raiz->esq = rotacaoEsquerda(raiz->esq);
+        return rotacaoDireita(raiz);
+    }
+    if (fb < -1 && fatorBalanceamento(raiz->dir) <= 0) return rotacaoEsquerda(raiz);
+    if (fb < -1 && fatorBalanceamento(raiz->dir) > 0) {
+        raiz->dir = rotacaoDireita(raiz->dir);
+        return rotacaoEsquerda(raiz);
+    }
+
+    return raiz;
+}
+
+// ------------------ Impressão ------------------
+void emOrdem(No* raiz) {
+    if (raiz != NULL) {
+        emOrdem(raiz->esq);
+        printf("Codigo: %d | Nome: %s | Preco: %.2f\n",
+               raiz->item.codigo, raiz->item.nome, raiz->item.preco);
+        emOrdem(raiz->dir);
+    }
+}
+
+// ------------------ Ler CSV ------------------
+void carregarCSV(const char* nomeArquivo, No** arvorePreco, No** arvoreCodigo) {
+    FILE* f = fopen(nomeArquivo, "r");
+    if (!f) {
+        printf("Erro ao abrir o arquivo!\n");
+        return;
+    }
+
+    char linha[256];
+    while (fgets(linha, sizeof(linha), f)) {
+        Produto p;
+        char* token = strtok(linha, ";");
+        if (!token) continue;
+        p.codigo = atoi(token);
+
+        token = strtok(NULL, ";");
+        if (!token) continue;
+        strcpy(p.nome, token);
+
+        token = strtok(NULL, ";");
+        if (!token) continue;
+        p.preco = atof(token);
+
+        *arvorePreco = inserirPorPreco(*arvorePreco, p);
+        *arvoreCodigo = inserirPorCodigo(*arvoreCodigo, p);
+    }
+    fclose(f);
+}
+
+// ------------------ Carrinho ------------------
+void adicionarCarrinho(No** carrinho, No* arvore, int codigo) {
+    No* prod = buscarPorCodigo(arvore, codigo);
+    if (!prod) {
+        printf("Produto não encontrado!\n");
+        return;
+    }
+    *carrinho = inserirPorCodigo(*carrinho, prod->item);
+    printf("Produto '%s' adicionado ao carrinho!\n", prod->item.nome);
+}
+
+void removerCarrinho(No** carrinho, int codigo) {
+    *carrinho = removerPorCodigo(*carrinho, codigo);
+    printf("Produto removido do carrinho (se existia)!\n");
+}
+
+// ------------------ Menu ------------------
+void menu(No* arvoreCodigo, No* arvorePreco, No** carrinho) {
+    int opc, codigo;
+    do {
+        printf("\n1 - Ver produtos (por codigo)\n2 - Ver produtos (por preco)\n");
+        printf("3 - Adicionar ao carrinho\n4 - Remover do carrinho\n5 - Ver carrinho\n0 - Sair\n");
+        printf("Opcao: ");
+        scanf("%d", &opc);
+
+        switch(opc) {
+            case 1: emOrdem(arvoreCodigo); break;
+            case 2: emOrdem(arvorePreco); break;
+            case 3:
+                printf("Digite o codigo do produto: ");
+                scanf("%d", &codigo);
+                adicionarCarrinho(carrinho, arvoreCodigo, codigo);
+                break;
+            case 4:
+                printf("Digite o codigo do produto: ");
+                scanf("%d", &codigo);
+                removerCarrinho(carrinho, codigo);
+                break;
+            case 5:
+                printf("Carrinho:\n");
+                emOrdem(*carrinho);
+                break;
+            case 0: break;
+            default: printf("Opcao invalida!\n");
+        }
+    } while(opc != 0);
+}
+
+// ------------------ Main ------------------
+int main() {
+    No* arvorePreco = NULL;
+    No* arvoreCodigo = NULL;
+    No* carrinho = NULL;
+
+    carregarCSV("produtos_simples_10000.csv", &arvorePreco, &arvoreCodigo);
+
+    menu(arvoreCodigo, arvorePreco, &carrinho);
+
+    return 0;
+}
